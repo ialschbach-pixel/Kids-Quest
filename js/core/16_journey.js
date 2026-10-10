@@ -160,6 +160,11 @@
         setInterval(updateCamp,500);
       }
 
+      /* Persistent side nav: Back + Home during every game (Issue 5). */
+      const kqSb=$('#kqSideBack'),kqSh=$('#kqSideHome');
+      if(kqSb)kqSb.addEventListener('click',()=>{try{kqAskExitGame();}catch(e){}});
+      if(kqSh)kqSh.addEventListener('click',()=>{try{kqNavLevel='home';kqLastCategory=null;showHome();}catch(e){}});
+
       $$('.grade-btn').forEach(b=>b.addEventListener('click',()=>setGrade(Number(b.dataset.grade),false)));
       $$('.game-grade-btn').forEach(b=>b.addEventListener('click',()=>setGrade(Number(b.dataset.gameGrade),true)));
       $$('.theme-btn').forEach(b=>b.addEventListener('click',()=>{state.theme=b.dataset.theme;$$('.theme-btn').forEach(x=>x.classList.toggle('selected',x===b));document.body.classList.remove('theme-planets','theme-animals','theme-ocean','theme-sports','theme-dinosaurs','theme-fashion');document.body.classList.add(`theme-${state.theme}`);const cameo=$('#kqIntroCameoImg');if(cameo)cameo.src=kqQuestyOutfit();const mapQ=$('#mapQuestyArt');if(mapQ)mapQ.src=kqQuestyOutfit();const pawnI=$('#mapPawnImg');if(pawnI)pawnI.src=kqQuestyOutfit();toast(`${b.textContent.trim()} world selected!`);}));
@@ -213,6 +218,30 @@
         kqIntroPressArmed=false;
         return true;
       }
+      /* Coordinate tap dedup: ghost/duplicate taps ALWAYS land at the same
+         screen coordinates as the original tap (that's the nature of
+         tap-through). Track the last accepted tap; ignore any navigation tap
+         within 50px and 1500ms of it. Real taps on different buttons are
+         farther apart; a false positive just means "tap again". */
+      let kqIntroLastTap={x:-9999,y:-9999,t:0};
+      function kqIntroTapFresh(ev){
+        let x=null,y=null,t=Date.now();
+        try{
+          if(ev&&ev.clientX!==undefined&&ev.clientX!==null){x=ev.clientX;y=ev.clientY;}
+          else if(typeof window!=='undefined'&&window.event&&window.event.clientX!==undefined){x=window.event.clientX;y=window.event.clientY;}
+        }catch(e){}
+        if(x===null||x===undefined)return false;
+        const dx=x-kqIntroLastTap.x,dy=y-kqIntroLastTap.y;
+        const dist=Math.sqrt(dx*dx+dy*dy),dt=t-kqIntroLastTap.t;
+        if(dist<50&&dt<1500)return true; /* ghost/duplicate — ignore */
+        kqIntroLastTap={x:x,y:y,t:t};
+        return false;
+      }
+      /* Belt & suspenders: also require a real press (kept from before). */
+      function kqIntroNavClean(ev){
+        if(kqIntroTapFresh(ev))return false; /* same-spot duplicate */
+        return kqIntroNavOk(); /* real press required */
+      }
 
       /* Tile art source: single-file builds inject window.kqTileURIs (data URIs);
          multi-file/APK builds fall back to the images/tiles/ paths. */
@@ -251,7 +280,13 @@
         kqIntroHideAllViews();
         $('#kqIntroView').classList.add('active');
         ['#introGrades','#introWorlds','#introGames'].forEach(s=>{$(s).style.display='none';});
-        $(which).style.display='';
+        const target=$(which);
+        target.style.display='';
+        /* Settling: ignore all pointer input on the new screen for 450ms.
+           Ghost/duplicate taps from the previous screen land in this window
+           and hit nothing. */
+        target.classList.add('kq-intro-settling');
+        setTimeout(()=>{try{target.classList.remove('kq-intro-settling');}catch(e){}},450);
         kqIntroPressArmed=false; /* disarm: next screen needs its own press */
         window.scrollTo({top:0});
       }
@@ -273,8 +308,8 @@
             <button type="button" class="kq-intro-bubble" id="introBrowseAll">Browse all games</button>
           </div>`;
         $$('[data-pick-grade]',host).forEach(b=>{
-          b.onclick=()=>{
-            if(!kqIntroNavOk())return; /* ignore ghost tap-through */
+          b.onclick=(ev)=>{
+            if(!kqIntroNavClean(ev))return; /* ignore ghost tap-through */
             const g=Number(b.dataset.pickGrade);
             setGrade(g,false);
             kqIntroGrade=g;
@@ -283,7 +318,7 @@
             kqIntroShow('#introWorlds');
           };
         });
-        $('#introBrowseAll').onclick=()=>{ if(!kqIntroNavOk())return; kqIntroFromIntro=false; showHome(); };
+        $('#introBrowseAll').onclick=(ev)=>{ if(!kqIntroNavClean(ev))return; kqIntroFromIntro=false; showHome(); };
       }
       /* ---- Screen 2: world picker ---- */
       function kqIntroRenderWorlds(){
@@ -313,8 +348,8 @@
           </div>`;
         kqIntroWireGradePills(host);
         $$('[data-pick-world]',host).forEach(b=>{
-          b.onclick=()=>{
-            if(!kqIntroNavOk())return; /* ignore ghost tap-through */
+          b.onclick=(ev)=>{
+            if(!kqIntroNavClean(ev))return; /* ignore ghost tap-through */
             kqIntroWorld=b.dataset.pickWorld;
             const w=kqIntroWorldData.find(x=>x.id===kqIntroWorld);
             if(typeof speak==='function')speak(`${w?w.name:'World'}! Pick a game!`);
@@ -322,8 +357,8 @@
             kqIntroShow('#introGames');
           };
         });
-        $('#introBackGrades').onclick=()=>{ if(!kqIntroNavOk())return; kqIntroRenderGrades(); kqIntroShow('#introGrades'); };
-        $('#introBrowseAll2').onclick=()=>{ if(!kqIntroNavOk())return; kqIntroFromIntro=false; showHome(); };
+        $('#introBackGrades').onclick=(ev)=>{ if(!kqIntroNavClean(ev))return; kqIntroRenderGrades(); kqIntroShow('#introGrades'); };
+        $('#introBrowseAll2').onclick=(ev)=>{ if(!kqIntroNavClean(ev))return; kqIntroFromIntro=false; showHome(); };
       }
       /* ---- Screen 3: world games (filtered by grade) ---- */
       function kqIntroRenderGames(){
@@ -355,15 +390,15 @@
           </div>`;
         kqIntroWireGradePills(host);
         $$('[data-launch-game]',host).forEach(b=>{
-          b.onclick=()=>{
-            if(!kqIntroNavOk())return; /* ignore ghost tap-through */
+          b.onclick=(ev)=>{
+            if(!kqIntroNavClean(ev))return; /* ignore ghost tap-through */
             kqIntroFromIntro=true;
             kqLaunchWithJourney(b.dataset.launchGame);
           };
         });
-        $('#introBackWorlds').onclick=()=>{ if(!kqIntroNavOk())return; kqIntroRenderWorlds(); kqIntroShow('#introWorlds'); };
-        $('#introChangeGrade3').onclick=()=>{ if(!kqIntroNavOk())return; kqIntroRenderGrades(); kqIntroShow('#introGrades'); };
-        $('#introBrowseAll3').onclick=()=>{ if(!kqIntroNavOk())return; kqIntroFromIntro=false; showHome(); };
+        $('#introBackWorlds').onclick=(ev)=>{ if(!kqIntroNavClean(ev))return; kqIntroRenderWorlds(); kqIntroShow('#introWorlds'); };
+        $('#introChangeGrade3').onclick=(ev)=>{ if(!kqIntroNavClean(ev))return; kqIntroRenderGrades(); kqIntroShow('#introGrades'); };
+        $('#introBrowseAll3').onclick=(ev)=>{ if(!kqIntroNavClean(ev))return; kqIntroFromIntro=false; showHome(); };
       }
       /* Entry point: show grade picker on app open. */
       function kqShowIntro(){

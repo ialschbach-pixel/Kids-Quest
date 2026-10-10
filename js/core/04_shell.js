@@ -34,6 +34,9 @@
         kqStopHeartbeat();
         state.game = null; state.locked = false; kqTryOn = null; // leaving any feature clears the shop try-on preview
         $('#activityView').classList.remove('active'); $('#kqFeatureView').classList.remove('active'); $('#homeView').classList.add('active');
+        /* Hide the game side nav when leaving the game window. */
+        try{const sn=$('#kqGameSideNav');if(sn)sn.classList.remove('kq-show');}catch(e){}
+        try{$('#activityView').removeAttribute('data-game');}catch(e){}
         /* Leaving the intro flow: make sure its view is hidden so it can't stack under home. */
         try{const iv=$('#kqIntroView');if(iv)iv.classList.remove('active');}catch(e){}
         $('#backSlot').innerHTML = ''; if(window.KQState&&window.KQState.avatar)kqRenderHome();
@@ -46,6 +49,8 @@
         kqStopHeartbeat();
         state.game = null; state.locked = false; kqTryOn = null;
         $('#activityView').classList.remove('active'); $('#kqFeatureView').classList.remove('active'); $('#homeView').classList.add('active');
+        try{const sn=$('#kqGameSideNav');if(sn)sn.classList.remove('kq-show');}catch(e){}
+        try{$('#activityView').removeAttribute('data-game');}catch(e){}
         if(window.KQState&&window.KQState.avatar)kqRenderHome();
         kqRestoreJourney(true);
         /* Expand the target category */
@@ -89,6 +94,8 @@
             /* Launched from intro flow: back to the intro world games view. */
             kqIntroFromIntro=false;
             kqNavLevel='home'; kqLastCategory=null;
+            try{const sn=$('#kqGameSideNav');if(sn)sn.classList.remove('kq-show');}catch(e){}
+            try{$('#activityView').removeAttribute('data-game');}catch(e){}
             kqIntroRenderGames();
             kqIntroShow('#introGames');
           } else if(kqNavLevel==='game'&&kqLastCategory){
@@ -116,6 +123,11 @@
         kqNavLevel='game'; kqLastCategory=journeyWorld;
         state.game = game; kqTryOn = null; state.q = 0; state.score = 0; state.seriesScore = 0; state.total = 6; state.round = 0; state.pathStep = 0; state.locked = false; state.usedProblems = new Set();
         $('#homeView').classList.remove('active'); $('#kqFeatureView').classList.remove('active'); $('#activityView').classList.add('active'); if(typeof kqLastActionAt!=='undefined')kqLastActionAt=Date.now();
+        /* Each game gets its own window identity (Issue 4): tag the view so it
+           feels like a dedicated game window, not a reused panel. */
+        try{$('#activityView').dataset.game=game;}catch(e){}
+        /* Show the persistent side nav (Back + Home) for this game (Issue 5). */
+        try{const sn=$('#kqGameSideNav');if(sn)sn.classList.add('kq-show');}catch(e){}
         $('#activityTitle').textContent=gameInfo[game][0];
         if(game==='storybooks'){
           // Story Books is a free-reading library, not a 6-round challenge game:
