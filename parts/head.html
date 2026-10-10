@@ -144,8 +144,10 @@
     h1, h2, h3, p { margin-top: 0; }
     h1, h2, h3 { font-family: "Trebuchet MS", "Avenir Next", sans-serif; line-height: 1.04; font-weight: 900; }
     /* (Adventure-map home replaces the old welcome hero CSS) */
-    .theme-chooser { margin-top: 18px; }
-    .theme-chooser h3 { font-size: 1rem; margin: 0 0 8px; text-align: left; }
+    .theme-chooser { margin-top: 18px; border-radius: 20px; padding: 14px 12px 16px;
+      background: #1b2a6b url(images/world-picker-bg.webp) center/cover no-repeat; position: relative; overflow: hidden; }
+    .theme-chooser h3 { font-size: 1rem; margin: 0 0 8px; text-align: left; color: #fff; text-shadow: 0 2px 8px rgba(10,20,60,.5); position: relative; }
+    .theme-chooser .theme-grid { position: relative; }
     .theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
     .theme-btn { min-height: 62px; border: 2px solid var(--line); background: linear-gradient(180deg, var(--surface), var(--surface-soft)); border-radius: 15px; cursor: pointer; font-weight: 900; padding: 7px 5px; box-shadow: 0 4px 0 rgba(23,50,77,.1), 0 8px 16px rgba(23,50,77,.06); position: relative; overflow: hidden; transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease; }
     .theme-btn:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--sky) 45%, var(--line)); }
@@ -2007,19 +2009,11 @@
     /* ═══════════ Intro flow: grade → world → games ═══════════ */
     #kqIntroView { padding: 16px 12px 40px; max-width: 900px; margin: 0 auto; }
     .kq-intro-shell { min-height: 70vh; }
-    /* World picker gets a starry-night adventure backdrop (not plain white). */
+    /* World picker gets custom Questy starry-night art (not plain white). */
     #introWorlds { border-radius: 24px; padding: 18px 14px 26px; margin: 0 -6px;
-      background: linear-gradient(180deg,#1b2a6b 0%,#2c4a9e 34%,#5b7fd6 62%,#a8c6f5 100%);
+      background: #1b2a6b url(images/world-picker-bg.webp) center/cover no-repeat;
       box-shadow: inset 0 0 120px rgba(20,30,90,.35); position: relative; overflow: hidden; }
-    #introWorlds::before { content:''; position: absolute; inset: 0; pointer-events: none;
-      background-image: radial-gradient(2px 2px at 12% 18%, #fff 60%, transparent 61%),
-        radial-gradient(1.6px 1.6px at 28% 8%, #fff 60%, transparent 61%),
-        radial-gradient(2px 2px at 44% 22%, #ffe9a8 60%, transparent 61%),
-        radial-gradient(1.5px 1.5px at 61% 10%, #fff 60%, transparent 61%),
-        radial-gradient(2px 2px at 76% 20%, #fff 60%, transparent 61%),
-        radial-gradient(1.6px 1.6px at 88% 8%, #ffe9a8 60%, transparent 61%),
-        radial-gradient(1.4px 1.4px at 8% 34%, #fff 60%, transparent 61%),
-        radial-gradient(1.8px 1.8px at 94% 30%, #fff 60%, transparent 61%); }
+    /* (star dots removed — custom art now provides the backdrop) */
     #introWorlds .kq-intro-title, #introWorlds .kq-intro-sub { color: #fff; text-shadow: 0 2px 8px rgba(10,20,60,.5); position: relative; }
     #introWorlds .kq-intro-sub { opacity: .92; }
     #introWorlds .kq-intro-gradebar { position: relative; }
@@ -2065,6 +2059,10 @@
     .kq-intro-bubble { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 32px; border: none; border-radius: 999px; background: linear-gradient(135deg, #7c4dff, #448aff); color: #fff; font: inherit; font-size: 18px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 14px rgba(68,138,255,.35); transition: transform .12s; }
     .kq-intro-bubble:active { transform: scale(.96); }
     .kq-intro-settling, .kq-intro-settling * { pointer-events: none !important; }
+    /* Tap-through shield: full-screen transparent layer that captures all taps
+       for 700ms after each intro screen change. Ghost taps hit the shield. */
+    #kqIntroTapShield{position:fixed;inset:0;z-index:99999;background:transparent;display:none;touch-action:none;}
+    #kqIntroTapShield.kq-show{display:block;}
 
 </style>
 </head>
