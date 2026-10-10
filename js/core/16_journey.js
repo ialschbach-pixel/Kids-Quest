@@ -200,15 +200,17 @@
         lab:['planets','bulb','staticzap','dropit','daysky','safezap','sinkfloat','magnetfish','seedsprout','colormix','icemelt','shadowsundial','buildbug','watercycle','fossildig','rocksorter']
       };
       let kqIntroGrade=null, kqIntroWorld=null, kqIntroFromIntro=false;
-      /* Ghost-tap guard: on touch screens a tap can bleed through to a button
+      /* Tap-through guard: on touch screens a tap can bleed through to a button
          that renders underneath the finger (e.g. grade tap lands on a world
-         card), skipping a screen. Ignore nav taps within 600ms of a screen
-         change so each tap only advances one step. */
-      let kqIntroLastNav=0;
+         card), skipping a screen. A timeout window is unreliable here — slow
+         devices can dispatch the ghost click after any fixed delay. Instead,
+         require a real press (pointerdown/touchstart) on the intro view before
+         any navigation click counts. Ghost clicks never have a preceding press;
+         real taps always do. The flag is disarmed on every screen change. */
+      let kqIntroPressArmed=false;
       function kqIntroNavOk(){
-        const now=Date.now();
-        if(now-kqIntroLastNav<600)return false;
-        kqIntroLastNav=now;
+        if(!kqIntroPressArmed)return false;
+        kqIntroPressArmed=false;
         return true;
       }
 
@@ -250,7 +252,7 @@
         $('#kqIntroView').classList.add('active');
         ['#introGrades','#introWorlds','#introGames'].forEach(s=>{$(s).style.display='none';});
         $(which).style.display='';
-        kqIntroLastNav=Date.now(); /* arm the ghost-tap guard for the new screen */
+        kqIntroPressArmed=false; /* disarm: next screen needs its own press */
         window.scrollTo({top:0});
       }
       /* ---- Screen 1: grade picker (shows every time on open) ---- */
@@ -372,7 +374,16 @@
 
 
       /* Intro flow: show grade picker on app open (every time). */
-      try { kqShowIntro(); } catch(e) {}
+      try {
+        /* Arm the tap-through guard on any real press inside the intro view. */
+        const kqIv=$('#kqIntroView');
+        if(kqIv){
+          const arm=function(){kqIntroPressArmed=true;};
+          kqIv.addEventListener('pointerdown',arm,true);
+          kqIv.addEventListener('touchstart',arm,{capture:true,passive:true});
+        }
+        kqShowIntro();
+      } catch(e) {}
 
     })();
   

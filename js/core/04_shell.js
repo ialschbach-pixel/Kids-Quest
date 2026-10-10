@@ -34,6 +34,8 @@
         kqStopHeartbeat();
         state.game = null; state.locked = false; kqTryOn = null; // leaving any feature clears the shop try-on preview
         $('#activityView').classList.remove('active'); $('#kqFeatureView').classList.remove('active'); $('#homeView').classList.add('active');
+        /* Leaving the intro flow: make sure its view is hidden so it can't stack under home. */
+        try{const iv=$('#kqIntroView');if(iv)iv.classList.remove('active');}catch(e){}
         $('#backSlot').innerHTML = ''; if(window.KQState&&window.KQState.avatar)kqRenderHome();
         window.scrollTo({top:0, behavior:'smooth'});
         kqRestoreJourney(true);
