@@ -200,6 +200,17 @@
         lab:['planets','bulb','staticzap','dropit','daysky','safezap','sinkfloat','magnetfish','seedsprout','colormix','icemelt','shadowsundial','buildbug','watercycle','fossildig','rocksorter']
       };
       let kqIntroGrade=null, kqIntroWorld=null, kqIntroFromIntro=false;
+      /* Ghost-tap guard: on touch screens a tap can bleed through to a button
+         that renders underneath the finger (e.g. grade tap lands on a world
+         card), skipping a screen. Ignore nav taps within 600ms of a screen
+         change so each tap only advances one step. */
+      let kqIntroLastNav=0;
+      function kqIntroNavOk(){
+        const now=Date.now();
+        if(now-kqIntroLastNav<600)return false;
+        kqIntroLastNav=now;
+        return true;
+      }
 
       /* Tile art source: single-file builds inject window.kqTileURIs (data URIs);
          multi-file/APK builds fall back to the images/tiles/ paths. */
@@ -239,6 +250,7 @@
         $('#kqIntroView').classList.add('active');
         ['#introGrades','#introWorlds','#introGames'].forEach(s=>{$(s).style.display='none';});
         $(which).style.display='';
+        kqIntroLastNav=Date.now(); /* arm the ghost-tap guard for the new screen */
         window.scrollTo({top:0});
       }
       /* ---- Screen 1: grade picker (shows every time on open) ---- */
@@ -256,10 +268,11 @@
             ${names.map((n,i)=>`<button type="button" class="kq-intro-grade-btn grade-${i}" data-pick-grade="${i}"><span class="kq-intro-grade-big">${n}</span><span class="kq-intro-grade-desc">${descs[i]}</span></button>`).join('')}
           </div>
           <div class="kq-intro-foot">
-            <button type="button" class="kq-intro-link" id="introBrowseAll">Browse all games</button>
+            <button type="button" class="kq-intro-bubble" id="introBrowseAll">Browse all games</button>
           </div>`;
         $$('[data-pick-grade]',host).forEach(b=>{
           b.onclick=()=>{
+            if(!kqIntroNavOk())return; /* ignore ghost tap-through */
             const g=Number(b.dataset.pickGrade);
             setGrade(g,false);
             kqIntroGrade=g;
@@ -268,7 +281,7 @@
             kqIntroShow('#introWorlds');
           };
         });
-        $('#introBrowseAll').onclick=()=>{ kqIntroFromIntro=false; showHome(); };
+        $('#introBrowseAll').onclick=()=>{ if(!kqIntroNavOk())return; kqIntroFromIntro=false; showHome(); };
       }
       /* ---- Screen 2: world picker ---- */
       function kqIntroRenderWorlds(){
@@ -299,6 +312,7 @@
         kqIntroWireGradePills(host);
         $$('[data-pick-world]',host).forEach(b=>{
           b.onclick=()=>{
+            if(!kqIntroNavOk())return; /* ignore ghost tap-through */
             kqIntroWorld=b.dataset.pickWorld;
             const w=kqIntroWorldData.find(x=>x.id===kqIntroWorld);
             if(typeof speak==='function')speak(`${w?w.name:'World'}! Pick a game!`);
@@ -306,8 +320,8 @@
             kqIntroShow('#introGames');
           };
         });
-        $('#introBackGrades').onclick=()=>{ kqIntroRenderGrades(); kqIntroShow('#introGrades'); };
-        $('#introBrowseAll2').onclick=()=>{ kqIntroFromIntro=false; showHome(); };
+        $('#introBackGrades').onclick=()=>{ if(!kqIntroNavOk())return; kqIntroRenderGrades(); kqIntroShow('#introGrades'); };
+        $('#introBrowseAll2').onclick=()=>{ if(!kqIntroNavOk())return; kqIntroFromIntro=false; showHome(); };
       }
       /* ---- Screen 3: world games (filtered by grade) ---- */
       function kqIntroRenderGames(){
@@ -331,18 +345,23 @@
             }).join('')}
           </div>
           <div class="kq-intro-foot">
-            <button type="button" class="kq-intro-link" id="introBackWorlds">&larr; All worlds</button>
-            <button type="button" class="kq-intro-link" id="introBrowseAll3">Browse all games</button>
+            <button type="button" class="kq-intro-bubble" id="introBrowseAll3">Browse all games</button>
+            <div class="kq-intro-foot-row">
+              <button type="button" class="kq-intro-link" id="introChangeGrade3">Change grade</button>
+              <button type="button" class="kq-intro-link" id="introBackWorlds">&larr; All worlds</button>
+            </div>
           </div>`;
         kqIntroWireGradePills(host);
         $$('[data-launch-game]',host).forEach(b=>{
           b.onclick=()=>{
+            if(!kqIntroNavOk())return; /* ignore ghost tap-through */
             kqIntroFromIntro=true;
             kqLaunchWithJourney(b.dataset.launchGame);
           };
         });
-        $('#introBackWorlds').onclick=()=>{ kqIntroRenderWorlds(); kqIntroShow('#introWorlds'); };
-        $('#introBrowseAll3').onclick=()=>{ kqIntroFromIntro=false; showHome(); };
+        $('#introBackWorlds').onclick=()=>{ if(!kqIntroNavOk())return; kqIntroRenderWorlds(); kqIntroShow('#introWorlds'); };
+        $('#introChangeGrade3').onclick=()=>{ if(!kqIntroNavOk())return; kqIntroRenderGrades(); kqIntroShow('#introGrades'); };
+        $('#introBrowseAll3').onclick=()=>{ if(!kqIntroNavOk())return; kqIntroFromIntro=false; showHome(); };
       }
       /* Entry point: show grade picker on app open. */
       function kqShowIntro(){
