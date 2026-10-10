@@ -83,13 +83,7 @@
         const av=$('#activityView');
         const reduced=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const go=()=>{
-          if(typeof kqIntroFromIntro!=='undefined'&&kqIntroFromIntro&&kqIntroWorld){
-            /* Launched from intro flow: back to the intro world games view. */
-            kqIntroFromIntro=false;
-            kqNavLevel='home'; kqLastCategory=null;
-            kqIntroRenderGames();
-            kqIntroShow('#introGames');
-          } else if(kqNavLevel==='game'&&kqLastCategory){
+          if(kqNavLevel==='game'&&kqLastCategory){
             /* First back: land on the category we came from, expanded + scrolled into view. */
             kqNavLevel='category';
             showHomeToCategory(kqLastCategory);
